@@ -3,62 +3,84 @@
 import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import Link from 'next/link';
-import { generatePagination } from '@/app/lib/utils';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 export default function Pagination({ totalPages }: { totalPages: number }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentPage = Number(searchParams.get('page')) || 1;
- 
-  const createPageURL = (pageNumber: number | string) => {
+
+  if (totalPages <= 1) return null; // Prevent rendering if only one page
+
+  const createPageURL = (pageNumber: number) => {
     const params = new URLSearchParams(searchParams);
     params.set('page', pageNumber.toString());
     return `${pathname}?${params.toString()}`;
   };
-  // NOTE: Uncomment this code in Chapter 11
 
-  // const allPages = generatePagination(currentPage, totalPages);
+  const generatePagination = (currentPage: number, totalPages: number): (number | string)[] => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('...'); // Add ellipsis if there's a gap
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i);
+      }
+      if (currentPage < totalPages - 2) pages.push('...'); // Add ellipsis if there's a gap
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  const allPages = generatePagination(currentPage, totalPages);
 
   return (
-    <>
-      {/*  NOTE: Uncomment this code in Chapter 11 */}
+    <div className="inline-flex">
+      <PaginationArrow
+        direction="left"
+        href={createPageURL(currentPage - 1)}
+        isDisabled={currentPage <= 1}
+      />
 
-      {/* <div className="inline-flex">
-        <PaginationArrow
-          direction="left"
-          href={createPageURL(currentPage - 1)}
-          isDisabled={currentPage <= 1}
-        />
+      <div className="flex -space-x-px">
+        {allPages.map((page, index) => {
+          let position: 'first' | 'last' | 'middle' | 'single' | undefined;
 
-        <div className="flex -space-x-px">
-          {allPages.map((page, index) => {
-            let position: 'first' | 'last' | 'single' | 'middle' | undefined;
+          // Determine the position based on index and content
+          if (index === 0) {
+            position = 'first';
+          } else if (index === allPages.length - 1) {
+            position = 'last';
+          } else if (page === '...') {
+            position = 'middle'; // Check for ellipsis
+          } else if (typeof page === 'number') {
+            position = allPages.length === 3 ? 'single' : 'middle';
+          }
 
-            if (index === 0) position = 'first';
-            if (index === allPages.length - 1) position = 'last';
-            if (allPages.length === 1) position = 'single';
-            if (page === '...') position = 'middle';
+          const isActive = typeof page === 'number' && currentPage === page;
 
-            return (
-              <PaginationNumber
-                key={page}
-                href={createPageURL(page)}
-                page={page}
-                position={position}
-                isActive={currentPage === page}
-              />
-            );
-          })}
-        </div>
+          return (
+            <PaginationNumber
+              key={page}
+              href={createPageURL(Number(page))}
+              page={page}
+              position={position}
+              isActive={isActive}
+            />
+          );
+        })}
+      </div>
 
-        <PaginationArrow
-          direction="right"
-          href={createPageURL(currentPage + 1)}
-          isDisabled={currentPage >= totalPages}
-        />
-      </div> */}
-    </>
+      <PaginationArrow
+        direction="right"
+        href={createPageURL(currentPage + 1)}
+        isDisabled={currentPage >= totalPages}
+      />
+    </div>
   );
 }
 
